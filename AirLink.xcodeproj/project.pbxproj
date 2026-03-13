@@ -12,6 +12,11 @@
 		A1234567890ABCDEF123456B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1234567890ABCDEF123456A /* ContentView.swift */; };
 		A1234567890ABCDEF123456D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1234567890ABCDEF123456C /* Assets.xcassets */; };
 		A1234567890ABCDEF1234570 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1234567890ABCDEF123456F /* Preview Assets.xcassets */; };
+		B1234567890ABCDEF1234501 /* MultipeerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1234567890ABCDEF1234502 /* MultipeerManager.swift */; };
+		B1234567890ABCDEF1234503 /* MessageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1234567890ABCDEF1234504 /* MessageModel.swift */; };
+		B1234567890ABCDEF1234505 /* ScreenShareManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1234567890ABCDEF1234506 /* ScreenShareManager.swift */; };
+		B1234567890ABCDEF1234507 /* AudioCallManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1234567890ABCDEF1234508 /* AudioCallManager.swift */; };
+		B1234567890ABCDEF1234509 /* UIComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1234567890ABCDEF123450A /* UIComponents.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -22,6 +27,11 @@
 		A1234567890ABCDEF123456C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1234567890ABCDEF123456F /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		A1234567890ABCDEF1234571 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B1234567890ABCDEF1234502 /* MultipeerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultipeerManager.swift; sourceTree = "<group>"; };
+		B1234567890ABCDEF1234504 /* MessageModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageModel.swift; sourceTree = "<group>"; };
+		B1234567890ABCDEF1234506 /* ScreenShareManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenShareManager.swift; sourceTree = "<group>"; };
+		B1234567890ABCDEF1234508 /* AudioCallManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCallManager.swift; sourceTree = "<group>"; };
+		B1234567890ABCDEF123450A /* UIComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIComponents.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,6 +67,11 @@
 				A1234567890ABCDEF1234566 /* AppDelegate.swift */,
 				A1234567890ABCDEF1234568 /* SceneDelegate.swift */,
 				A1234567890ABCDEF123456A /* ContentView.swift */,
+				B1234567890ABCDEF1234502 /* MultipeerManager.swift */,
+				B1234567890ABCDEF1234504 /* MessageModel.swift */,
+				B1234567890ABCDEF1234506 /* ScreenShareManager.swift */,
+				B1234567890ABCDEF1234508 /* AudioCallManager.swift */,
+				B1234567890ABCDEF123450A /* UIComponents.swift */,
 				A1234567890ABCDEF123456C /* Assets.xcassets */,
 				A1234567890ABCDEF1234571 /* Info.plist */,
 				A1234567890ABCDEF123456E /* Preview Content */,
@@ -145,6 +160,11 @@
 				A1234567890ABCDEF123456B /* ContentView.swift in Sources */,
 				A1234567890ABCDEF1234567 /* AppDelegate.swift in Sources */,
 				A1234567890ABCDEF1234569 /* SceneDelegate.swift in Sources */,
+				B1234567890ABCDEF1234501 /* MultipeerManager.swift in Sources */,
+				B1234567890ABCDEF1234503 /* MessageModel.swift in Sources */,
+				B1234567890ABCDEF1234505 /* ScreenShareManager.swift in Sources */,
+				B1234567890ABCDEF1234507 /* AudioCallManager.swift in Sources */,
+				B1234567890ABCDEF1234509 /* UIComponents.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -203,7 +223,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -260,7 +280,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -280,9 +300,9 @@
 				DEVELOPMENT_ASSET_PATHS = "\"AirLink/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AirLink/Info.plist;
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "AirLink yakın cihazlar ile bağlantı kurmak için yerel ağ erişimg gerektirir.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "AirLink sesli sohbet için mikrofon erişimi gerektirir.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -310,9 +330,9 @@
 				DEVELOPMENT_ASSET_PATHS = "\"AirLink/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AirLink/Info.plist;
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "AirLink yakın cihazlar ile bağlantı kurmak için yerel ağ erişimi gerektirir.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "AirLink sesli sohbet için mikrofon erişimi gerektirir.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";

@@ -2,14 +2,87 @@
 //  UIComponents.swift
 //  AirLink
 //
-//  Kullanıcı arayüzü için yardımcı SwiftUI bileşenleri
-//  ContentView'de kullanılan tüm özel UI komponetleri
+//  Modern UI bileşenleri
 //
 
 import SwiftUI
 import MultipeerConnectivity
 
-// MARK: - Bağlantı Durumu Card'ı
+// MARK: - Settings Helpers
+
+struct SettingsSection<Content: View>: View {
+    let title: String
+    let icon: String
+    @ViewBuilder let content: () -> Content
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(AppTheme.accent)
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .foregroundColor(.white.opacity(0.6))
+            }
+            .padding(.horizontal)
+            
+            VStack(spacing: 0) {
+                content()
+            }
+            .padding()
+            .background(AppTheme.cardBg)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppTheme.cardBorder, lineWidth: 1))
+            .padding(.horizontal)
+        }
+    }
+}
+
+struct SettingsRow: View {
+    let icon: String
+    let title: String
+    let value: String
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .foregroundColor(AppTheme.accent)
+                .frame(width: 24)
+            Text(title)
+                .foregroundColor(.white)
+            Spacer()
+            Text(value)
+                .foregroundColor(.white.opacity(0.4))
+                .font(.subheadline)
+                .lineLimit(1)
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+struct SettingsToggleRow: View {
+    let icon: String
+    let title: String
+    @Binding var isOn: Bool
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .foregroundColor(AppTheme.accent)
+                .frame(width: 24)
+            Text(title)
+                .foregroundColor(.white)
+            Spacer()
+            Toggle("", isOn: $isOn)
+                .labelsHidden()
+                .tint(AppTheme.accent)
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+// MARK: - Bağlantı Durumu Card
 
 struct ConnectionStatusCard: View {
     
@@ -18,41 +91,46 @@ struct ConnectionStatusCard: View {
     
     var body: some View {
         Button(action: onConnectionTap) {
-            HStack {
-                // Durum ikonu
-                Image(systemName: statusIcon)
-                    .font(.title2)
-                    .foregroundColor(statusColor)
+            HStack(spacing: 14) {
+                // Animated status indicator
+                ZStack {
+                    Circle()
+                        .fill(statusColor.opacity(0.2))
+                        .frame(width: 48, height: 48)
+                    
+                    Image(systemName: statusIcon)
+                        .font(.system(size: 22))
+                        .foregroundStyle(statusColor)
+                }
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Bağlantı Durumu")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.white.opacity(0.4))
                     
                     Text(multipeerManager.connectionStatus)
-                        .font(.headline)
-                        .foregroundColor(.primary)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
                     
                     if !multipeerManager.connectedPeers.isEmpty {
                         Text(connectedDevicesText)
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppTheme.accent.opacity(0.8))
                     }
                 }
                 
                 Spacer()
                 
                 Image(systemName: "chevron.right")
-                    .foregroundColor(.secondary)
+                    .font(.caption.weight(.bold))
+                    .foregroundColor(.white.opacity(0.3))
             }
             .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(UIColor.secondarySystemBackground))
-            )
+            .background(AppTheme.cardBg)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppTheme.cardBorder, lineWidth: 1))
         }
         .buttonStyle(PlainButtonStyle())
-        .padding(.horizontal)
     }
     
     private var statusIcon: String {
@@ -81,52 +159,63 @@ struct ConnectionStatusCard: View {
     }
 }
 
-// MARK: - Hızlı Aksiyon Card'ı
+// MARK: - Hızlı Aksiyon Card
 
 struct QuickActionCard: View {
     
     let icon: String
     let title: String
     let subtitle: String
-    let color: Color
+    let gradient: [Color]
     let action: () -> Void
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 12) {
-                
-                Image(systemName: icon)
-                    .font(.system(size: 24))
-                    .foregroundColor(color)
-                    .frame(width: 50, height: 50)
-                    .background(
-                        Circle()
-                            .fill(color.opacity(0.1))
-                    )
+            VStack(spacing: 14) {
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(colors: gradient.map { $0.opacity(0.25) },
+                                           startPoint: .topLeading, endPoint: .bottomTrailing)
+                        )
+                        .frame(width: 52, height: 52)
+                    
+                    Image(systemName: icon)
+                        .font(.system(size: 22))
+                        .foregroundStyle(
+                            LinearGradient(colors: gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
+                        )
+                }
                 
                 VStack(spacing: 4) {
                     Text(title)
-                        .font(.subheadline)
-                        .bold()
-                        .foregroundColor(.primary)
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .foregroundColor(.white)
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
                     
                     Text(subtitle)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
+                        .font(.system(size: 12))
+                        .foregroundColor(.white.opacity(0.4))
                         .lineLimit(1)
                 }
             }
             .frame(maxWidth: .infinity)
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(UIColor.secondarySystemBackground))
-            )
+            .padding(.vertical, 18)
+            .padding(.horizontal, 8)
+            .background(AppTheme.cardBg)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppTheme.cardBorder, lineWidth: 1))
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(ScaleButtonStyle())
+    }
+}
+
+struct ScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+            .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
     }
 }
 
@@ -138,103 +227,83 @@ struct MessageBubbleView: View {
     
     var body: some View {
         HStack {
-            if message.isFromCurrentUser {
-                Spacer(minLength: 50)
-            }
+            if message.isFromCurrentUser { Spacer(minLength: 60) }
             
             VStack(alignment: message.isFromCurrentUser ? .trailing : .leading, spacing: 4) {
                 
-                // Gönderen adı (sadece başkalarının mesajları için)
                 if !message.isFromCurrentUser && message.type == .text {
                     Text(message.senderName)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(.caption.weight(.medium))
+                        .foregroundColor(AppTheme.accent.opacity(0.7))
                         .padding(.horizontal, 4)
                 }
                 
-                // Mesaj içeriği
-                HStack {
-                    
-                    if message.type == .text {
-                        Text(message.content)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .fill(message.isFromCurrentUser ? Color.accentColor : Color(UIColor.systemGray5))
-                            )
-                            .foregroundColor(message.isFromCurrentUser ? .white : .primary)
-                    } else {
-                        // Sistem mesajları
-                        HStack(spacing: 6) {
-                            Image(systemName: systemMessageIcon)
-                                .font(.caption)
-                                .foregroundColor(systemMessageColor)
-                            
-                            Text(message.content)
-                                .font(.caption)
-                                .italic()
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
+                if message.type == .text {
+                    Text(message.content)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
                         .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(systemMessageColor.opacity(0.1))
+                            message.isFromCurrentUser ?
+                                AnyShapeStyle(LinearGradient(colors: [AppTheme.accent, AppTheme.secondary],
+                                                             startPoint: .topLeading, endPoint: .bottomTrailing)) :
+                                AnyShapeStyle(Color.white.opacity(0.1))
                         )
-                        .foregroundColor(systemMessageColor)
+                        .foregroundColor(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 18))
+                } else {
+                    HStack(spacing: 6) {
+                        Image(systemName: systemMessageIcon)
+                            .font(.caption)
+                        Text(message.content)
+                            .font(.caption)
+                            .italic()
                     }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(systemMessageColor.opacity(0.12))
+                    .foregroundColor(systemMessageColor)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 
-                // Zaman damgası ve durum
                 if message.type == .text {
                     HStack(spacing: 4) {
                         Text(message.formattedTime)
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .font(.system(size: 10))
+                            .foregroundColor(.white.opacity(0.3))
                         
                         if message.isFromCurrentUser {
                             Image(systemName: message.messageIcon)
-                                .font(.caption2)
-                                .foregroundColor(message.status == .failed ? .red : .secondary)
+                                .font(.system(size: 10))
+                                .foregroundColor(message.status == .failed ? .red : .white.opacity(0.3))
                         }
                     }
                 }
             }
             
-            if !message.isFromCurrentUser {
-                Spacer(minLength: 50)
-            }
+            if !message.isFromCurrentUser { Spacer(minLength: 60) }
         }
     }
     
     private var systemMessageIcon: String {
         switch message.type {
-        case .systemInfo:
-            return "info.circle"
-        case .userJoined:
-            return "person.badge.plus"
-        case .userLeft:
-            return "person.badge.minus"
-        default:
-            return "info.circle"
+        case .systemInfo: return "info.circle"
+        case .userJoined: return "person.badge.plus"
+        case .userLeft: return "person.badge.minus"
+        default: return "info.circle"
         }
     }
     
     private var systemMessageColor: Color {
         switch message.type {
-        case .systemInfo:
-            return .orange
-        case .userJoined:
-            return .green
-        case .userLeft:
-            return .red
-        default:
-            return .gray
+        case .systemInfo: return .orange
+        case .userJoined: return .green
+        case .userLeft: return .red
+        default: return .gray
         }
     }
 }
 
-// MARK: - Yazma Durumu Göstergesi
+// MARK: - Yazma Göstergesi
 
 struct TypingIndicatorView: View {
     
@@ -243,11 +312,10 @@ struct TypingIndicatorView: View {
     
     var body: some View {
         HStack {
-            
             HStack(spacing: 4) {
                 ForEach(0..<3, id: \.self) { index in
                     Circle()
-                        .fill(Color.gray)
+                        .fill(Color.white.opacity(0.5))
                         .frame(width: 6, height: 6)
                         .offset(y: animationOffset)
                         .animation(
@@ -258,29 +326,25 @@ struct TypingIndicatorView: View {
                         )
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(UIColor.systemGray5))
-            )
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(Color.white.opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: 18))
             
             Spacer()
         }
-        .onAppear {
-            animationOffset = -3
-        }
+        .onAppear { animationOffset = -3 }
         .overlay(
             Text("\(typingUsers.first ?? "Birisi") yazıyor...")
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundColor(.white.opacity(0.4))
                 .offset(y: -25),
             alignment: .leading
         )
     }
 }
 
-// MARK: - Mesaj Giriş Alanı
+// MARK: - Mesaj Giriş
 
 struct MessageInputView: View {
     
@@ -293,34 +357,36 @@ struct MessageInputView: View {
     
     var body: some View {
         HStack(spacing: 12) {
-            
-            // Metin giriş alanı
             TextField("Mesaj yazın...", text: $text, axis: .vertical)
-                .textFieldStyle(.roundedBorder)
                 .lineLimit(1...5)
                 .focused($isTextFieldFocused)
-                .onChange(of: text) { _ in
-                    onTextChange()
-                }
-                .onSubmit {
-                    onSend()
-                }
+                .onChange(of: text) { _ in onTextChange() }
+                .onSubmit { onSend() }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(Color.white.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.1), lineWidth: 1))
+                .foregroundColor(.white)
             
-            // Gönder butonu
             Button(action: onSend) {
                 Image(systemName: "arrow.up.circle.fill")
-                    .font(.title2)
-                    .foregroundColor(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .gray : .accentColor)
+                    .font(.system(size: 32))
+                    .foregroundStyle(
+                        text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?
+                            LinearGradient(colors: [.gray.opacity(0.4), .gray.opacity(0.3)], startPoint: .top, endPoint: .bottom) :
+                            LinearGradient(colors: [AppTheme.accent, AppTheme.secondary], startPoint: .top, endPoint: .bottom)
+                    )
             }
             .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
         .padding(.horizontal)
-        .padding(.vertical, 8)
-        .background(Color(UIColor.systemBackground))
+        .padding(.vertical, 10)
+        .background(AppTheme.gradientBottom)
     }
 }
 
-// MARK: - Ekran Paylaşımı Durum View
+// MARK: - Ekran Paylaşımı Durum
 
 struct ScreenShareStatusView: View {
     
@@ -328,51 +394,54 @@ struct ScreenShareStatusView: View {
     
     var body: some View {
         VStack(spacing: 16) {
-            
-            // Durum ikonu ve başlık
-            VStack(spacing: 8) {
-                Image(systemName: statusIcon)
-                    .font(.system(size: 50))
-                    .foregroundColor(statusColor)
+            ZStack {
+                Circle()
+                    .fill(statusColor.opacity(0.15))
+                    .frame(width: 90, height: 90)
                 
+                Image(systemName: statusIcon)
+                    .font(.system(size: 36, weight: .light))
+                    .foregroundStyle(statusColor)
+            }
+            
+            VStack(spacing: 6) {
                 Text(statusTitle)
-                    .font(.title2)
-                    .bold()
-                    .foregroundColor(.primary)
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
                 
                 Text(statusSubtitle)
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.white.opacity(0.4))
                     .multilineTextAlignment(.center)
+                    .lineLimit(2)
             }
             
-            // Durum detayları
             if screenShareManager.isSharing || screenShareManager.isReceivingShare {
-                VStack(spacing: 8) {
-                    
+                HStack(spacing: 24) {
                     if screenShareManager.isSharing {
-                        HStack {
-                            Text("Gönderilen Frame:").foregroundColor(.secondary)
-                            Spacer()
+                        VStack(spacing: 4) {
                             Text("\(screenShareManager.sentFrameCount)")
-                                .bold()
+                                .font(.system(size: 22, weight: .bold, design: .rounded))
+                                .foregroundColor(AppTheme.accent)
+                            Text("Gönderilen")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.4))
                         }
                     }
-                    
                     if screenShareManager.isReceivingShare {
-                        HStack {
-                            Text("Alınan Frame:").foregroundColor(.secondary)
-                            Spacer()
+                        VStack(spacing: 4) {
                             Text("\(screenShareManager.receivedFrameCount)")
-                                .bold()
+                                .font(.system(size: 22, weight: .bold, design: .rounded))
+                                .foregroundColor(.green)
+                            Text("Alınan")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.4))
                         }
                     }
                 }
                 .padding()
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color(UIColor.secondarySystemBackground))
-                )
+                .background(AppTheme.cardBg)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
             }
         }
         .padding()
@@ -380,70 +449,48 @@ struct ScreenShareStatusView: View {
     
     private var statusIcon: String {
         switch screenShareManager.status {
-        case .idle:
-            return "tv"
-        case .starting:
-            return "play.circle"
-        case .recording, .streaming:
-            return "record.circle.fill"
-        case .stopping:
-            return "stop.circle"
-        case .error(_):
-            return "exclamationmark.triangle.fill"
+        case .idle: return "rectangle.on.rectangle"
+        case .starting: return "play.circle"
+        case .recording, .streaming: return "record.circle.fill"
+        case .stopping: return "stop.circle"
+        case .error(_): return "exclamationmark.triangle.fill"
         }
     }
     
     private var statusColor: Color {
         switch screenShareManager.status {
-        case .idle:
-            return .gray
-        case .starting:
-            return .orange
-        case .recording, .streaming:
-            return .green
-        case .stopping:
-            return .orange
-        case .error(_):
-            return .red
+        case .idle: return .white.opacity(0.5)
+        case .starting: return .orange
+        case .recording, .streaming: return .green
+        case .stopping: return .orange
+        case .error(_): return .red
         }
     }
     
     private var statusTitle: String {
         switch screenShareManager.status {
-        case .idle:
-            return "Ekran Paylaşımı Hazır"
-        case .starting:
-            return "Başlatılıyor..."
-        case .recording:
-            return "Kaydediliyor"
-        case .streaming:
-            return "Paylaşılıyor"
-        case .stopping:
-            return "Durduruluyor..."
-        case .error(_):
-            return "Hata Oluştu"
+        case .idle: return "Hazır"
+        case .starting: return "Başlatılıyor..."
+        case .recording: return "Kaydediliyor"
+        case .streaming: return "Paylaşılıyor"
+        case .stopping: return "Durduruluyor..."
+        case .error(_): return "Hata"
         }
     }
     
     private var statusSubtitle: String {
         switch screenShareManager.status {
-        case .idle:
-            return "Ekranınızı diğer cihazlara paylaşmaya başlamak için butona basın"
-        case .starting:
-            return "Lütfen ekran kaydı izni verin"
-        case .recording:
-            return "Ekran kaydediliyor, stream bekleniyor"
-        case .streaming:
-            return "Ekranınız diğer cihazlara aktarılıyor"
-        case .stopping:
-            return "Paylaşım sonlandırılıyor"
-        case .error(let message):
-            return message
+        case .idle: return "Ekranınızı paylaşmaya başlamak için butona basın"
+        case .starting: return "Lütfen ekran kaydı izni verin"
+        case .recording: return "Ekran kaydediliyor, stream bekleniyor"
+        case .streaming: return "Ekranınız aktarılıyor"
+        case .stopping: return "Paylaşım sonlandırılıyor"
+        case .error(let message): return message
         }
     }
 }
 
-// MARK: - Ekran Paylaşımı İstatistik View
+// MARK: - Ekran Paylaşımı İstatistik
 
 struct ScreenShareStatsView: View {
     
@@ -451,46 +498,45 @@ struct ScreenShareStatsView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: "chart.bar.fill")
+                    .foregroundColor(AppTheme.accent)
+                Text("İstatistikler")
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .foregroundColor(.white.opacity(0.6))
+            }
             
-            Text("İstatistikler")
-                .font(.headline)
-                .padding(.horizontal)
-            
-            VStack(spacing: 8) {
-                
+            VStack(spacing: 10) {
                 if screenShareManager.isSharing {
                     StatRow(title: "Gönderilen Frame", value: "\(screenShareManager.sentFrameCount)")
+                    Divider().overlay(Color.white.opacity(0.08))
                     StatRow(title: "Stream Kalitesi", value: "\(Int(screenShareManager.streamQuality * 100))%")
                 }
-                
                 if screenShareManager.isReceivingShare {
                     StatRow(title: "Alınan Frame", value: "\(screenShareManager.receivedFrameCount)")
                 }
             }
             .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(UIColor.secondarySystemBackground))
-            )
-            .padding(.horizontal)
+            .background(AppTheme.cardBg)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppTheme.cardBorder, lineWidth: 1))
         }
     }
 }
 
-// MARK: - İstatistik Satırı
-
 struct StatRow: View {
-    
     let title: String
     let value: String
     
     var body: some View {
         HStack {
             Text(title)
-                .foregroundColor(.secondary)
+                .foregroundColor(.white.opacity(0.5))
+                .font(.subheadline)
             Spacer()
             Text(value)
-                .bold()
+                .font(.subheadline.weight(.bold))
+                .foregroundColor(.white)
         }
     }
 }
@@ -502,79 +548,80 @@ struct ActiveCallView: View {
     @ObservedObject var audioCallManager: AudioCallManager
     
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 14) {
             
-            // Çağrı bilgileri
-            VStack(spacing: 4) {
+            HStack(spacing: 10) {
+                Circle()
+                    .fill(.green)
+                    .frame(width: 8, height: 8)
                 Text(audioCallManager.currentCall?.peerName ?? "Bilinmiyor")
-                    .font(.headline)
-                    .bold()
-                
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .foregroundColor(.white)
+                Spacer()
                 Text(audioCallManager.currentCall?.formattedDuration ?? "00:00")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 14, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.5))
             }
             
-            // Ses seviyesi göstergesi
             if audioCallManager.audioLevel > 0 {
-                VStack(spacing: 4) {
-                    Text("Ses Seviyesi")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    ProgressView(value: audioCallManager.audioLevel, total: 1.0)
-                        .progressViewStyle(LinearProgressViewStyle(tint: .green))
-                        .frame(height: 4)
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.white.opacity(0.1))
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(LinearGradient(colors: [.green, .mint], startPoint: .leading, endPoint: .trailing))
+                            .frame(width: geo.size.width * CGFloat(audioCallManager.audioLevel))
+                    }
                 }
+                .frame(height: 4)
             }
             
-            // Çağrı kontrolleri
-            HStack(spacing: 20) {
+            HStack(spacing: 16) {
+                CallControlButton(
+                    icon: audioCallManager.isMuted ? "mic.slash.fill" : "mic.fill",
+                    color: audioCallManager.isMuted ? .red : .white.opacity(0.2),
+                    action: { audioCallManager.toggleMute() }
+                )
                 
-                // Mute butonu
-                Button(action: {
-                    audioCallManager.toggleMute()
-                }) {
-                    Image(systemName: audioCallManager.isMuted ? "mic.slash.fill" : "mic.fill")
-                        .font(.title2)
-                        .foregroundColor(.white)
-                        .frame(width: 44, height: 44)
-                        .background(audioCallManager.isMuted ? Color.red : Color.gray)
-                        .clipShape(Circle())
-                }
+                CallControlButton(
+                    icon: audioCallManager.isSpeakerOn ? "speaker.wave.3.fill" : "speaker.fill",
+                    color: audioCallManager.isSpeakerOn ? AppTheme.accent : .white.opacity(0.2),
+                    action: { audioCallManager.toggleSpeaker() }
+                )
                 
-                // Speaker butonu
-                Button(action: {
-                    audioCallManager.toggleSpeaker()
-                }) {
-                    Image(systemName: audioCallManager.isSpeakerOn ? "speaker.wave.3.fill" : "speaker.fill")
-                        .font(.title2)
-                        .foregroundColor(.white)
-                        .frame(width: 44, height: 44)
-                        .background(audioCallManager.isSpeakerOn ? Color.blue : Color.gray)
-                        .clipShape(Circle())
-                }
+                Spacer()
                 
-                // Çağrıyı bitir butonu
-                Button(action: {
-                    audioCallManager.endCall()
-                }) {
+                Button(action: { audioCallManager.endCall() }) {
                     Image(systemName: "phone.down.fill")
-                        .font(.title2)
+                        .font(.body)
                         .foregroundColor(.white)
-                        .frame(width: 44, height: 44)
+                        .frame(width: 48, height: 48)
                         .background(Color.red)
                         .clipShape(Circle())
                 }
             }
         }
         .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(UIColor.secondarySystemBackground))
-                .shadow(radius: 5)
-        )
-        .padding(.horizontal)
+        .background(AppTheme.cardBg)
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(AppTheme.cardBorder, lineWidth: 1))
+    }
+}
+
+struct CallControlButton: View {
+    let icon: String
+    let color: Color
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.body)
+                .foregroundColor(.white)
+                .frame(width: 44, height: 44)
+                .background(color)
+                .clipShape(Circle())
+        }
     }
 }
 
@@ -587,148 +634,201 @@ struct ConnectionView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 20) {
+            ZStack {
+                AppTheme.backgroundGradient.ignoresSafeArea()
                 
-                // Mevcut bağlantılar
-                if !multipeerManager.connectedPeers.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Bağlı Cihazlar")
-                            .font(.headline)
-                            .padding(.horizontal)
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 20) {
                         
-                        ForEach(multipeerManager.connectedPeers) { peer in
-                            HStack {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.green)
+                        // Bağlı Cihazlar
+                        if !multipeerManager.connectedPeers.isEmpty {
+                            VStack(alignment: .leading, spacing: 12) {
+                                SectionHeader(title: "Bağlı Cihazlar", icon: "checkmark.circle.fill", color: .green)
                                 
-                                VStack(alignment: .leading) {
-                                    Text(peer.displayName)
-                                        .font(.subheadline)
-                                        .bold()
-                                    
-                                    Text("Bağlı")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
+                                ForEach(multipeerManager.connectedPeers) { peer in
+                                    HStack(spacing: 12) {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(.green)
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(peer.displayName)
+                                                .font(.subheadline.weight(.semibold))
+                                                .foregroundColor(.white)
+                                            Text("Bağlı")
+                                                .font(.caption)
+                                                .foregroundColor(.green.opacity(0.7))
+                                        }
+                                        Spacer()
+                                    }
+                                    .padding()
+                                    .background(AppTheme.cardBg)
+                                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.green.opacity(0.2), lineWidth: 1))
                                 }
-                                
-                                Spacer()
                             }
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color(UIColor.secondarySystemBackground))
-                            )
-                            .padding(.horizontal)
-                        }
-                    }
-                }
-                
-                // Bulunan cihazlar
-                if !multipeerManager.availablePeers.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Bulunan Cihazlar")
-                            .font(.headline)
-                            .padding(.horizontal)
-                        
-                        ForEach(multipeerManager.availablePeers, id: \.self) { peer in
-                            HStack {
-                                Image(systemName: "wifi.circle")
-                                    .foregroundColor(.orange)
-                                
-                                VStack(alignment: .leading) {
-                                    Text(peer.displayName)
-                                        .font(.subheadline)
-                                        .bold()
-                                    
-                                    Text("Bağlanabilir")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                
-                                Spacer()
-                                
-                                Button("Bağlan") {
-                                    multipeerManager.connectToPeer(peer)
-                                }
-                                .buttonStyle(.borderless)
-                                .foregroundColor(.accentColor)
-                            }
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color(UIColor.secondarySystemBackground))
-                            )
                             .padding(.horizontal)
                         }
-                    }
-                }
-                
-                // Durum bilgisi
-                if multipeerManager.connectedPeers.isEmpty && multipeerManager.availablePeers.isEmpty {
-                    VStack(spacing: 12) {
-                        Image(systemName: "magnifyingglass.circle")
-                            .font(.system(size: 50))
-                            .foregroundColor(.secondary)
                         
-                        Text("Cihaz aranıyor...")
-                            .font(.title2)
-                            .bold()
-                        
-                        Text("Yakında başka AirLink uygulaması olan cihazları arayacağız")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding()
-                }
-                
-                Spacer()
-                
-                // Bağlantı kontrolleri
-                VStack(spacing: 12) {
-                    
-                    HStack {
-                        Text("Advertising:")
-                        Spacer()
-                        Toggle("", isOn: .constant(multipeerManager.isAdvertising))
-                            .onChange(of: multipeerManager.isAdvertising) { value in
-                                if value {
-                                    multipeerManager.startAdvertising()
-                                } else {
-                                    multipeerManager.stopAdvertising()
+                        // Bulunan Cihazlar
+                        if !multipeerManager.availablePeers.isEmpty {
+                            VStack(alignment: .leading, spacing: 12) {
+                                SectionHeader(title: "Bulunan Cihazlar", icon: "wifi.circle", color: .orange)
+                                
+                                ForEach(multipeerManager.availablePeers, id: \.self) { peer in
+                                    HStack(spacing: 12) {
+                                        Image(systemName: "wifi.circle")
+                                            .foregroundColor(.orange)
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(peer.displayName)
+                                                .font(.subheadline.weight(.semibold))
+                                                .foregroundColor(.white)
+                                            Text("Bağlanabilir")
+                                                .font(.caption)
+                                                .foregroundColor(.white.opacity(0.4))
+                                        }
+                                        Spacer()
+                                        Button("Bağlan") {
+                                            multipeerManager.connectToPeer(peer)
+                                        }
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundColor(AppTheme.accent)
+                                        .padding(.horizontal, 14)
+                                        .padding(.vertical, 6)
+                                        .background(AppTheme.accent.opacity(0.15))
+                                        .clipShape(Capsule())
+                                    }
+                                    .padding()
+                                    .background(AppTheme.cardBg)
+                                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppTheme.cardBorder, lineWidth: 1))
                                 }
                             }
-                    }
-                    
-                    HStack {
-                        Text("Browsing:")
-                        Spacer()
-                        Toggle("", isOn: .constant(multipeerManager.isBrowsing))
-                            .onChange(of: multipeerManager.isBrowsing) { value in
-                                if value {
-                                    multipeerManager.startBrowsing()
-                                } else {
-                                    multipeerManager.stopBrowsing()
+                            .padding(.horizontal)
+                        }
+                        
+                        // Boş durum
+                        if multipeerManager.connectedPeers.isEmpty && multipeerManager.availablePeers.isEmpty {
+                            VStack(spacing: 16) {
+                                ZStack {
+                                    Circle()
+                                        .fill(AppTheme.accent.opacity(0.1))
+                                        .frame(width: 80, height: 80)
+                                    Image(systemName: "antenna.radiowaves.left.and.right")
+                                        .font(.system(size: 32, weight: .light))
+                                        .foregroundColor(AppTheme.accent)
                                 }
+                                
+                                Text("Cihaz Aranıyor...")
+                                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                                    .foregroundColor(.white)
+                                
+                                Text("Yakındaki AirLink cihazları aranıyor")
+                                    .font(.subheadline)
+                                    .foregroundColor(.white.opacity(0.4))
+                                    .multilineTextAlignment(.center)
                             }
+                            .padding(.vertical, 40)
+                        }
+                        
+                        // Kontroller
+                        VStack(spacing: 0) {
+                            SettingsToggleRow(icon: "antenna.radiowaves.left.and.right", title: "Advertising",
+                                isOn: Binding(
+                                    get: { multipeerManager.isAdvertising },
+                                    set: { newValue in
+                                        if newValue { multipeerManager.startAdvertising() }
+                                        else { multipeerManager.stopAdvertising() }
+                                    }
+                                ))
+                            Divider().overlay(Color.white.opacity(0.1)).padding(.vertical, 4)
+                            SettingsToggleRow(icon: "magnifyingglass", title: "Browsing",
+                                isOn: Binding(
+                                    get: { multipeerManager.isBrowsing },
+                                    set: { newValue in
+                                        if newValue { multipeerManager.startBrowsing() }
+                                        else { multipeerManager.stopBrowsing() }
+                                    }
+                                ))
+                        }
+                        .padding()
+                        .background(AppTheme.cardBg)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppTheme.cardBorder, lineWidth: 1))
+                        .padding(.horizontal)
+                        
+                        Spacer(minLength: 30)
                     }
+                    .padding(.top, 10)
                 }
-                .padding()
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(UIColor.secondarySystemBackground))
-                )
-                .padding(.horizontal)
             }
             .navigationTitle("Bağlantılar")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Kapat") {
-                        dismiss()
-                    }
+                    Button("Kapat") { dismiss() }
+                        .foregroundColor(AppTheme.accent)
                 }
             }
         }
+    }
+}
+
+struct SectionHeader: View {
+    let title: String
+    let icon: String
+    let color: Color
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .foregroundColor(color)
+                .font(.subheadline)
+            Text(title)
+                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                .foregroundColor(.white.opacity(0.6))
+        }
+    }
+}
+
+// MARK: - Uygulama Seçici Card
+
+struct AppPickerCard: View {
+    let app: ShareableApp
+    let isSelected: Bool
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 10) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(
+                            LinearGradient(colors: app.gradient.map { $0.opacity(isSelected ? 0.4 : 0.15) },
+                                           startPoint: .topLeading, endPoint: .bottomTrailing)
+                        )
+                        .frame(width: 52, height: 52)
+                    
+                    Image(systemName: app.icon)
+                        .font(.system(size: 22))
+                        .foregroundStyle(
+                            LinearGradient(colors: app.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
+                        )
+                }
+                
+                Text(app.name)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.white.opacity(isSelected ? 1.0 : 0.6))
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(isSelected ? AppTheme.accent.opacity(0.12) : Color.clear)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(isSelected ? AppTheme.accent.opacity(0.6) : Color.clear, lineWidth: 1.5)
+            )
+        }
+        .buttonStyle(ScaleButtonStyle())
     }
 }

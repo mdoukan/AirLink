@@ -57,8 +57,11 @@ class MultipeerManager: NSObject, ObservableObject {
     private var mcAdvertiserAssistant: MCNearbyServiceAdvertiser? // Advertiser
     private var mcBrowser: MCNearbyServiceBrowser? // Browser
     
-    // Veri alım callback'i
-    var onDataReceived: ((Data, DataType, MCPeerID) -> Void)?
+    // Veri alım callback'leri - her veri tipi için ayrı
+    var onMessageReceived: ((Data, MCPeerID) -> Void)?
+    var onVideoFrameReceived: ((Data, MCPeerID) -> Void)?
+    var onAudioDataReceived: ((Data, MCPeerID) -> Void)?
+    var onMetaDataReceived: ((Data, MCPeerID) -> Void)?
     
     // MARK: - Initialization
     override init() {
@@ -105,7 +108,7 @@ extension MultipeerManager {
         )
         
         mcAdvertiserAssistant?.delegate = self
-        mcAdvertiserAssistant?.startAdvertising()
+        mcAdvertiserAssistant?.startAdvertisingPeer()
         
         DispatchQueue.main.async {
             self.isAdvertising = true
@@ -117,7 +120,7 @@ extension MultipeerManager {
     
     /// Advertising'i durdur
     func stopAdvertising() {
-        mcAdvertiserAssistant?.stopAdvertising()
+        mcAdvertiserAssistant?.stopAdvertisingPeer()
         mcAdvertiserAssistant = nil
         
         DispatchQueue.main.async {
@@ -178,13 +181,13 @@ extension MultipeerManager {
             return
         }
         
-        // Veri tipini metadata olarak ekle
+        // Veri tipini metadata olarak ekle (null byte ayırıcı ile)
         var dataWithType = type.rawValue.data(using: .utf8) ?? Data()
+        dataWithType.append(0) // null byte separator
         dataWithType.append(data)
         
         do {
             try mcSession.send(dataWithType, toPeers: mcSession.connectedPeers, with: .reliable)
-            print("📤 Veri gönderildi - Tip: \(type.rawValue), Boyut: \(data.count) bytes")
         } catch {
             print("❌ Veri gönderme hatası: \(error.localizedDescription)")
         }
@@ -198,11 +201,11 @@ extension MultipeerManager {
         }
         
         var dataWithType = type.rawValue.data(using: .utf8) ?? Data()
+        dataWithType.append(0) // null byte separator
         dataWithType.append(data)
         
         do {
             try mcSession.send(dataWithType, toPeers: [peer], with: .reliable)
-            print("📤 Veri gönderildi (\(peer.displayName)) - Tip: \(type.rawValue)")
         } catch {
             print("❌ Veri gönderme hatası: \(error.localizedDescription)")
         }
@@ -282,22 +285,34 @@ extension MultipeerManager: MCSessionDelegate {
     }
     
     func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
-        // Veri tipini ayıkla
-        guard let typeData = data.prefix(while: { $0 != 0 }),
-              let typeString = String(data: typeData, encoding: .utf8),
-              let dataType = DataType(rawValue: typeString) else {
+        // Null byte separator ile veri tipini ayıkla
+        guard let separatorIndex = data.firstIndex(of: 0) else {
             print("❌ Geçersiz veri formatı alındı")
             return
         }
         
-        // Asıl veriyi ayıkla
-        let actualData = data.dropFirst(typeData.count)
+        let typeData = data[data.startIndex..<separatorIndex]
+        guard let typeString = String(data: typeData, encoding: .utf8),
+              let dataType = DataType(rawValue: typeString) else {
+            print("❌ Geçersiz veri tipi")
+            return
+        }
         
-        print("📥 Veri alındı (\(peerID.displayName)) - Tip: \(dataType.rawValue), Boyut: \(actualData.count) bytes")
+        // Asıl veriyi ayıkla (null byte'tan sonrası)
+        let actualData = Data(data[(separatorIndex + 1)...])
         
-        // Callback'i çağır
+        // Tip'e göre ilgili callback'i çağır
         DispatchQueue.main.async {
-            self.onDataReceived?(Data(actualData), dataType, peerID)
+            switch dataType {
+            case .message:
+                self.onMessageReceived?(actualData, peerID)
+            case .videoFrame:
+                self.onVideoFrameReceived?(actualData, peerID)
+            case .audioData:
+                self.onAudioDataReceived?(actualData, peerID)
+            case .metaData:
+                self.onMetaDataReceived?(actualData, peerID)
+            }
         }
     }
     

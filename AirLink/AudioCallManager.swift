@@ -14,7 +14,7 @@ import CallKit
 
 // MARK: - Ses Çağrı Durumu
 
-enum AudioCallStatus {
+enum AudioCallStatus: Equatable {
     case idle           // Boşta
     case outgoingCall   // Giden çağrı
     case incomingCall   // Gelen çağrı  
@@ -72,6 +72,7 @@ class AudioCallManager: NSObject, ObservableObject {
     // Audio format ayarları
     private let audioFormat: AVAudioFormat
     private var audioBuffer: AVAudioPCMBuffer?
+    private var playerNode: AVAudioPlayerNode?
     
     // Timer'lar
     private var callTimer: Timer?
@@ -89,7 +90,7 @@ class AudioCallManager: NSObject, ObservableObject {
         
         // Audio format - 44.1kHz, 16-bit, mono
         self.audioFormat = AVAudioFormat(
-            standardFormatWithSampleRate: audioSettings.sampleRate,
+            standardFormatWithSampleRate: 44100.0,
             channels: 1
         )!
         
@@ -209,7 +210,7 @@ extension AudioCallManager {
         }
         
         // Mute durumunu karşı tarafa bildir
-        let muteStatus = ["action": "mute_status", "isMuted": isMuted]
+        let muteStatus: [String: Any] = ["action": "mute_status", "isMuted": isMuted]
         if let data = try? JSONSerialization.data(withJSONObject: muteStatus),
            let call = currentCall {
             multipeerManager.sendDataToPeer(data, type: .audioData, peer: call.peerID)
@@ -268,8 +269,7 @@ private extension AudioCallManager {
     }
     
     func setupDataReceiver() {
-        multipeerManager.onDataReceived = { [weak self] data, dataType, peerID in
-            guard dataType == .audioData else { return }
+        multipeerManager.onAudioDataReceived = { [weak self] data, peerID in
             self?.handleReceivedAudioData(data, from: peerID)
         }
     }
@@ -295,9 +295,17 @@ private extension AudioCallManager {
                 self?.processInputBuffer(buffer)
             }
             
+            // Player node oluştur (gelen ses için)
+            let player = AVAudioPlayerNode()
+            engine.attach(player)
+            engine.connect(player, to: engine.outputNode, format: audioFormat)
+            playerNode = player
+            
             // Audio engine'i başlat
             engine.prepare()
             try engine.start()
+            
+            player.play()
             
             callStatus = .active
             isInCall = true
@@ -326,11 +334,16 @@ private extension AudioCallManager {
     }
     
     func stopAudioEngine() {
+        playerNode?.stop()
         audioEngine?.stop()
         inputNode?.removeTap(onBus: 0)
+        if let player = playerNode, let engine = audioEngine {
+            engine.detach(player)
+        }
         audioEngine = nil
         inputNode = nil
         outputNode = nil
+        playerNode = nil
     }
     
     func resetCall() {
@@ -356,7 +369,7 @@ private extension AudioCallManager {
         let audioData = Data(bytes: channelData, count: frameCount * MemoryLayout<Float>.size)
         
         // Karşı tarafa ses verisi gönder
-        let audioPacket = [
+        let audioPacket: [String: Any] = [
             "action": "audio_data", 
             "data": audioData.base64EncodedString(),
             "frameCount": frameCount
@@ -466,8 +479,7 @@ private extension AudioCallManager {
     }
     
     func playReceivedAudio(_ data: Data, frameCount: Int) {
-        guard let engine = audioEngine,
-              let outputNode = outputNode else { return }
+        guard let player = playerNode else { return }
         
         // Float array'e çevir
         let floatArray = data.withUnsafeBytes { bytes in
@@ -480,25 +492,13 @@ private extension AudioCallManager {
         buffer.frameLength = AVAudioFrameCount(frameCount)
         
         if let channelData = buffer.floatChannelData?[0] {
-            for i in 0..<frameCount {
+            for i in 0..<min(frameCount, floatArray.count) {
                 channelData[i] = floatArray[i]
             }
         }
         
         // Buffer'ı oynat
-        let playerNode = AVAudioPlayerNode()
-        engine.attach(playerNode)
-        engine.connect(playerNode, to: outputNode, format: audioFormat)
-        
-        playerNode.scheduleBuffer(buffer) {
-            DispatchQueue.main.async {
-                engine.detach(playerNode)
-            }
-        }
-        
-        if !playerNode.isPlaying {
-            playerNode.play()
-        }
+        player.scheduleBuffer(buffer)
     }
     
     // MARK: - Timer Methods

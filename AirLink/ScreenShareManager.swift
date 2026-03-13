@@ -25,7 +25,7 @@ struct VideoFrame: Codable {
 
 // MARK: - Ekran Paylaşımı Durumu
 
-enum ScreenShareStatus {
+enum ScreenShareStatus: Equatable {
     case idle          // Boşta
     case starting      // Başlatılıyor
     case recording     // Kaydediyor
@@ -33,6 +33,55 @@ enum ScreenShareStatus {
     case stopping      // Durduruluyor
     case error(String) // Hata
 }
+
+// MARK: - Paylaşım Modu
+
+enum ShareMode: String, CaseIterable, Identifiable {
+    case fullScreen = "Tam Ekran"
+    case appSelect = "Uygulama Seç"
+    
+    var id: String { rawValue }
+    
+    var icon: String {
+        switch self {
+        case .fullScreen: return "rectangle.dashed"
+        case .appSelect: return "square.grid.2x2"
+        }
+    }
+}
+
+// MARK: - Paylaşılabilir Uygulama
+
+struct ShareableApp: Identifiable {
+    let id = UUID()
+    let name: String
+    let icon: String  // SF Symbol
+    let urlScheme: String
+    let gradient: [Color]
+    
+    static let availableApps: [ShareableApp] = [
+        ShareableApp(name: "Safari", icon: "safari", urlScheme: "https://www.apple.com",
+                     gradient: [Color(red: 0.0, green: 0.5, blue: 1.0), Color(red: 0.0, green: 0.75, blue: 1.0)]),
+        ShareableApp(name: "Haritalar", icon: "map.fill", urlScheme: "maps://",
+                     gradient: [Color(red: 0.2, green: 0.8, blue: 0.4), Color(red: 0.1, green: 0.65, blue: 0.35)]),
+        ShareableApp(name: "Fotoğraflar", icon: "photo.fill", urlScheme: "photos-redirect://",
+                     gradient: [Color(red: 1.0, green: 0.6, blue: 0.2), Color(red: 1.0, green: 0.4, blue: 0.3)]),
+        ShareableApp(name: "Müzik", icon: "music.note", urlScheme: "music://",
+                     gradient: [Color(red: 1.0, green: 0.2, blue: 0.4), Color(red: 0.9, green: 0.1, blue: 0.5)]),
+        ShareableApp(name: "Notlar", icon: "note.text", urlScheme: "mobilenotes://",
+                     gradient: [Color(red: 1.0, green: 0.85, blue: 0.2), Color(red: 1.0, green: 0.7, blue: 0.1)]),
+        ShareableApp(name: "Takvim", icon: "calendar", urlScheme: "calshow://",
+                     gradient: [Color(red: 0.9, green: 0.25, blue: 0.2), Color(red: 0.8, green: 0.15, blue: 0.15)]),
+        ShareableApp(name: "Mail", icon: "envelope.fill", urlScheme: "mailto:",
+                     gradient: [Color(red: 0.2, green: 0.5, blue: 1.0), Color(red: 0.15, green: 0.4, blue: 0.9)]),
+        ShareableApp(name: "Mesajlar", icon: "message.fill", urlScheme: "sms://",
+                     gradient: [Color(red: 0.2, green: 0.8, blue: 0.3), Color(red: 0.15, green: 0.7, blue: 0.25)]),
+        ShareableApp(name: "Ayarlar", icon: "gearshape.fill", urlScheme: "App-prefs://",
+                     gradient: [Color(red: 0.55, green: 0.55, blue: 0.58), Color(red: 0.4, green: 0.4, blue: 0.43)]),
+    ]
+}
+
+import SwiftUI
 
 // MARK: - Screen Share Manager
 
@@ -45,6 +94,8 @@ class ScreenShareManager: NSObject, ObservableObject {
     @Published var receivedFrameCount = 0
     @Published var sentFrameCount = 0
     @Published var streamQuality: Float = 0.8 // 0.0-1.0 arası kalite
+    @Published var shareMode: ShareMode = .fullScreen
+    @Published var selectedApp: ShareableApp?
     
     // MARK: - Private Properties
     private let multipeerManager: MultipeerManager
@@ -162,6 +213,21 @@ extension ScreenShareManager {
         
         print("🎛️ Stream kalitesi: \(Int(streamQuality * 100))%")
     }
+    
+    /// Seçilen uygulamayla ekran paylaşımını başlat
+    func startScreenShareWithApp(_ app: ShareableApp) {
+        selectedApp = app
+        shareMode = .appSelect
+        
+        startScreenShare()
+        
+        // Kayıt başladıktan sonra seçilen uygulamayı aç
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            if let url = URL(string: app.urlScheme) {
+                UIApplication.shared.open(url)
+            }
+        }
+    }
 }
 
 // MARK: - Private Methods
@@ -169,8 +235,7 @@ extension ScreenShareManager {
 private extension ScreenShareManager {
     
     func setupDataReceiver() {
-        multipeerManager.onDataReceived = { [weak self] data, dataType, peerID in
-            guard dataType == .videoFrame else { return }
+        multipeerManager.onVideoFrameReceived = { [weak self] data, peerID in
             self?.handleReceivedVideoData(data, from: peerID)
         }
     }
@@ -336,10 +401,10 @@ class VideoEncoder {
         }
         
         // Real-time encoding ayarları
-        VTSessionSetProperty(session, kVTCompressionPropertyKey_RealTime, kCFBooleanTrue)
-        VTSessionSetProperty(session, kVTCompressionPropertyKey_AverageBitRate, NSNumber(value: bitrate))
-        VTSessionSetProperty(session, kVTCompressionPropertyKey_MaxKeyFrameInterval, NSNumber(value: fps * 2))
-        VTSessionSetProperty(session, kVTCompressionPropertyKey_Quality, NSNumber(value: quality))
+        VTSessionSetProperty(session, key: kVTCompressionPropertyKey_RealTime, value: kCFBooleanTrue)
+        VTSessionSetProperty(session, key: kVTCompressionPropertyKey_AverageBitRate, value: NSNumber(value: bitrate))
+        VTSessionSetProperty(session, key: kVTCompressionPropertyKey_MaxKeyFrameInterval, value: NSNumber(value: fps * 2))
+        VTSessionSetProperty(session, key: kVTCompressionPropertyKey_Quality, value: NSNumber(value: quality))
         
         VTCompressionSessionPrepareToEncodeFrames(session)
         
@@ -365,7 +430,7 @@ class VideoEncoder {
     func updateQuality(_ newQuality: Float) {
         guard let session = compressionSession else { return }
         quality = newQuality
-        VTSessionSetProperty(session, kVTCompressionPropertyKey_Quality, NSNumber(value: quality))
+        VTSessionSetProperty(session, key: kVTCompressionPropertyKey_Quality, value: NSNumber(value: quality))
     }
     
     func invalidate() {
@@ -433,12 +498,17 @@ class VideoDecoder {
             kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
         ]
         
+        var callbackRecord = VTDecompressionOutputCallbackRecord(
+            decompressionOutputCallback: decompressionCallback,
+            decompressionOutputRefCon: Unmanaged.passUnretained(self).toOpaque()
+        )
+        
         VTDecompressionSessionCreate(
             allocator: nil,
             formatDescription: format,
             decoderSpecification: nil,
             imageBufferAttributes: attributes as CFDictionary,
-            outputCallback: decompressionCallback,
+            outputCallback: &callbackRecord,
             decompressionSessionOut: &decompressionSession
         )
     }
@@ -471,7 +541,7 @@ class VideoDecoder {
             dataBuffer: buffer,
             dataReady: true,
             makeDataReadyCallback: nil,
-            makeDataReadyRefcon: nil,
+            refcon: nil,
             formatDescription: nil,
             sampleCount: 1,
             sampleTimingEntryCount: 0,

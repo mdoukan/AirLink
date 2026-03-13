@@ -202,17 +202,11 @@ extension MessageManager {
 private extension MessageManager {
     
     func setupDataReceiver() {
-        multipeerManager.onDataReceived = { [weak self] data, dataType, peerID in
-            guard let self = self else { return }
-            
-            switch dataType {
-            case .message:
-                self.handleReceivedMessage(data, from: peerID)
-            case .metaData:
-                self.handleReceivedMetaData(data, from: peerID)
-            default:
-                break
-            }
+        multipeerManager.onMessageReceived = { [weak self] data, peerID in
+            self?.handleReceivedMessage(data, from: peerID)
+        }
+        multipeerManager.onMetaDataReceived = { [weak self] data, peerID in
+            self?.handleReceivedMetaData(data, from: peerID)
         }
     }
     
