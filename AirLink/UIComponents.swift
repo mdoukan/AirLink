@@ -219,22 +219,121 @@ struct ScaleButtonStyle: ButtonStyle {
     }
 }
 
+// MARK: - Grup Sohbet Header View
+
+struct GroupChatHeaderView: View {
+    let peers: [ConnectedPeer]
+    
+    // Peer adına göre sabit renk oluştur
+    private func colorForPeer(_ name: String) -> Color {
+        let colors: [Color] = [
+            .blue, .green, .orange, .purple, .pink, .mint, .cyan, .indigo, .teal, .yellow
+        ]
+        let hash = abs(name.hashValue)
+        return colors[hash % colors.count]
+    }
+    
+    var body: some View {
+        HStack(spacing: 0) {
+            // Katılımcı avatarları (üst üste binen)
+            HStack(spacing: -8) {
+                ForEach(Array(peers.prefix(5).enumerated()), id: \.element.id) { index, peer in
+                    ZStack {
+                        Circle()
+                            .fill(colorForPeer(peer.displayName))
+                            .frame(width: 28, height: 28)
+                        Text(String(peer.displayName.prefix(1)).uppercased())
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    .overlay(Circle().stroke(Color(red: 0.1, green: 0.12, blue: 0.22), lineWidth: 2))
+                    .zIndex(Double(5 - index))
+                }
+                
+                if peers.count > 5 {
+                    ZStack {
+                        Circle()
+                            .fill(Color.white.opacity(0.2))
+                            .frame(width: 28, height: 28)
+                        Text("+\(peers.count - 5)")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    .overlay(Circle().stroke(Color(red: 0.1, green: 0.12, blue: 0.22), lineWidth: 2))
+                }
+            }
+            
+            Spacer().frame(width: 10)
+            
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Grup Sohbet")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.white.opacity(0.8))
+                Text("\(peers.count) kişi bağlı")
+                    .font(.system(size: 10))
+                    .foregroundColor(.white.opacity(0.4))
+            }
+            
+            Spacer()
+            
+            // Çevrimiçi göstergesi
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(.green)
+                    .frame(width: 6, height: 6)
+                Text("Aktif")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.green)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color.green.opacity(0.12))
+            .clipShape(Capsule())
+        }
+        .padding(10)
+        .background(AppTheme.cardBg)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppTheme.cardBorder, lineWidth: 1))
+    }
+}
+
 // MARK: - Mesaj Bubble View
 
 struct MessageBubbleView: View {
     
     let message: ChatMessage
     
+    // Peer adına göre sabit renk oluştur
+    private func colorForName(_ name: String) -> Color {
+        let colors: [Color] = [
+            .blue, .green, .orange, .purple, .pink, .mint, .cyan, .indigo, .teal, .yellow
+        ]
+        let hash = abs(name.hashValue)
+        return colors[hash % colors.count]
+    }
+    
     var body: some View {
-        HStack {
+        HStack(alignment: .bottom, spacing: 8) {
             if message.isFromCurrentUser { Spacer(minLength: 60) }
+            
+            // Gönderen avatarı (sadece başkalarının mesajları için)
+            if !message.isFromCurrentUser && message.type == .text {
+                ZStack {
+                    Circle()
+                        .fill(colorForName(message.senderName))
+                        .frame(width: 30, height: 30)
+                    Text(String(message.senderName.prefix(1)).uppercased())
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.white)
+                }
+            }
             
             VStack(alignment: message.isFromCurrentUser ? .trailing : .leading, spacing: 4) {
                 
                 if !message.isFromCurrentUser && message.type == .text {
                     Text(message.senderName)
                         .font(.caption.weight(.medium))
-                        .foregroundColor(AppTheme.accent.opacity(0.7))
+                        .foregroundColor(colorForName(message.senderName).opacity(0.9))
                         .padding(.horizontal, 4)
                 }
                 
@@ -625,12 +724,156 @@ struct CallControlButton: View {
     }
 }
 
+// MARK: - QR Kod Gösterme View
+
+struct QRCodeDisplayView: View {
+    let connectionInfo: QRConnectionInfo
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            SectionHeader(title: "QR Kodunuz", icon: "qrcode", color: AppTheme.accent)
+            
+            VStack(spacing: 14) {
+                if let qrImage = QRCodeManager.generateQRCode(from: connectionInfo) {
+                    Image(uiImage: qrImage)
+                        .interpolation(.none)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 200, height: 200)
+                        .background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .shadow(color: AppTheme.accent.opacity(0.3), radius: 12)
+                } else {
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.white.opacity(0.1))
+                        .frame(width: 200, height: 200)
+                        .overlay(
+                            Text("QR kod oluşturulamadı")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.5))
+                        )
+                }
+                
+                Text(connectionInfo.deviceName)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.white)
+                
+                Text("Diğer cihaz bu kodu tarayarak bağlanabilir")
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.4))
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 20)
+            .background(AppTheme.cardBg)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppTheme.cardBorder, lineWidth: 1))
+        }
+        .padding(.horizontal)
+    }
+}
+
+// MARK: - QR Tarayıcı Sheet View
+
+struct QRScannerSheetView: View {
+    @ObservedObject var qrManager: QRCodeManager
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                AppTheme.backgroundGradient.ignoresSafeArea()
+                
+                VStack(spacing: 20) {
+                    // Kamera alanı
+                    ZStack {
+                        QRScannerView(
+                            onCodeScanned: { code in
+                                qrManager.handleScannedCode(code)
+                            },
+                            isScanning: $qrManager.isScanning
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                        
+                        // Tarama çerçevesi
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(AppTheme.accent.opacity(0.5), lineWidth: 2)
+                        
+                        // Tarama hedefi
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(AppTheme.accent, lineWidth: 3)
+                            .frame(width: 220, height: 220)
+                    }
+                    .frame(height: 350)
+                    .padding(.horizontal)
+                    
+                    // Durum mesajı
+                    if !qrManager.scanStatus.isEmpty {
+                        HStack(spacing: 10) {
+                            Image(systemName: qrManager.scannedConnectionInfo != nil ? "checkmark.circle.fill" : "info.circle.fill")
+                                .foregroundColor(qrManager.scannedConnectionInfo != nil ? .green : .orange)
+                            Text(qrManager.scanStatus)
+                                .font(.subheadline.weight(.medium))
+                                .foregroundColor(.white)
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            (qrManager.scannedConnectionInfo != nil ? Color.green : Color.orange).opacity(0.15)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .padding(.horizontal)
+                    }
+                    
+                    // Talimat
+                    VStack(spacing: 8) {
+                        Text("QR Kodu Tarayın")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                        Text("Diğer cihazın QR kodunu kameranızla tarayın")
+                            .font(.subheadline)
+                            .foregroundColor(.white.opacity(0.5))
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.horizontal)
+                    
+                    Spacer()
+                }
+                .padding(.top, 10)
+            }
+            .navigationTitle("QR Tarayıcı")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Kapat") {
+                        qrManager.isScanning = false
+                        dismiss()
+                    }
+                    .foregroundColor(AppTheme.accent)
+                }
+            }
+        }
+        .onAppear {
+            qrManager.isScanning = true
+        }
+    }
+}
+
 // MARK: - Bağlantı View
 
 struct ConnectionView: View {
     
     @ObservedObject var multipeerManager: MultipeerManager
+    @StateObject private var qrManager: QRCodeManager
+    @State private var showingQRScanner = false
+    @State private var showingMyQR = false
     @Environment(\.dismiss) private var dismiss
+    
+    init(multipeerManager: MultipeerManager) {
+        self.multipeerManager = multipeerManager
+        _qrManager = StateObject(wrappedValue: QRCodeManager(multipeerManager: multipeerManager))
+    }
     
     var body: some View {
         NavigationView {
@@ -640,10 +883,66 @@ struct ConnectionView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 20) {
                         
+                        // QR Kod Butonları
+                        HStack(spacing: 12) {
+                            Button(action: { showingMyQR.toggle() }) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "qrcode")
+                                        .font(.title3)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("QR Kodumu Göster")
+                                            .font(.subheadline.weight(.semibold))
+                                        Text("Diğer cihaz tarasın")
+                                            .font(.caption2)
+                                            .opacity(0.6)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(14)
+                                .background(
+                                    LinearGradient(colors: [AppTheme.accent.opacity(0.2), AppTheme.secondary.opacity(0.15)],
+                                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                                )
+                                .foregroundColor(.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                                .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppTheme.accent.opacity(0.3), lineWidth: 1))
+                            }
+                            
+                            Button(action: { showingQRScanner = true }) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "camera.viewfinder")
+                                        .font(.title3)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("QR Kod Tara")
+                                            .font(.subheadline.weight(.semibold))
+                                        Text("Kamera ile tara")
+                                            .font(.caption2)
+                                            .opacity(0.6)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(14)
+                                .background(
+                                    LinearGradient(colors: [Color.green.opacity(0.2), Color.mint.opacity(0.15)],
+                                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                                )
+                                .foregroundColor(.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.green.opacity(0.3), lineWidth: 1))
+                            }
+                        }
+                        .padding(.horizontal)
+                        
+                        // QR Kod Gösterimi
+                        if showingMyQR {
+                            QRCodeDisplayView(connectionInfo: qrManager.generateConnectionInfo())
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
+                        
                         // Bağlı Cihazlar
                         if !multipeerManager.connectedPeers.isEmpty {
                             VStack(alignment: .leading, spacing: 12) {
-                                SectionHeader(title: "Bağlı Cihazlar", icon: "checkmark.circle.fill", color: .green)
+                                SectionHeader(title: "Bağlı Cihazlar (\(multipeerManager.connectedPeers.count))", icon: "checkmark.circle.fill", color: .green)
                                 
                                 ForEach(multipeerManager.connectedPeers) { peer in
                                     HStack(spacing: 12) {
@@ -721,7 +1020,7 @@ struct ConnectionView: View {
                                     .font(.system(size: 20, weight: .bold, design: .rounded))
                                     .foregroundColor(.white)
                                 
-                                Text("Yakındaki AirLink cihazları aranıyor")
+                                Text("Yakındaki AirLink cihazları aranıyor\nveya QR kod ile hızlıca eşleştirin")
                                     .font(.subheadline)
                                     .foregroundColor(.white.opacity(0.4))
                                     .multilineTextAlignment(.center)
@@ -758,6 +1057,7 @@ struct ConnectionView: View {
                         Spacer(minLength: 30)
                     }
                     .padding(.top, 10)
+                    .animation(.easeInOut(duration: 0.25), value: showingMyQR)
                 }
             }
             .navigationTitle("Bağlantılar")
@@ -768,6 +1068,9 @@ struct ConnectionView: View {
                     Button("Kapat") { dismiss() }
                         .foregroundColor(AppTheme.accent)
                 }
+            }
+            .sheet(isPresented: $showingQRScanner) {
+                QRScannerSheetView(qrManager: qrManager)
             }
         }
     }

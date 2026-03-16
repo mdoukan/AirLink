@@ -17,6 +17,7 @@
 		B1234567890ABCDEF1234505 /* ScreenShareManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1234567890ABCDEF1234506 /* ScreenShareManager.swift */; };
 		B1234567890ABCDEF1234507 /* AudioCallManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1234567890ABCDEF1234508 /* AudioCallManager.swift */; };
 		B1234567890ABCDEF1234509 /* UIComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1234567890ABCDEF123450A /* UIComponents.swift */; };
+		B1234567890ABCDEF123450B /* QRCodeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1234567890ABCDEF123450C /* QRCodeManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +33,7 @@
 		B1234567890ABCDEF1234506 /* ScreenShareManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenShareManager.swift; sourceTree = "<group>"; };
 		B1234567890ABCDEF1234508 /* AudioCallManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCallManager.swift; sourceTree = "<group>"; };
 		B1234567890ABCDEF123450A /* UIComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIComponents.swift; sourceTree = "<group>"; };
+		B1234567890ABCDEF123450C /* QRCodeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -72,6 +74,7 @@
 				B1234567890ABCDEF1234506 /* ScreenShareManager.swift */,
 				B1234567890ABCDEF1234508 /* AudioCallManager.swift */,
 				B1234567890ABCDEF123450A /* UIComponents.swift */,
+				B1234567890ABCDEF123450C /* QRCodeManager.swift */,
 				A1234567890ABCDEF123456C /* Assets.xcassets */,
 				A1234567890ABCDEF1234571 /* Info.plist */,
 				A1234567890ABCDEF123456E /* Preview Content */,
@@ -165,6 +168,7 @@
 				B1234567890ABCDEF1234505 /* ScreenShareManager.swift in Sources */,
 				B1234567890ABCDEF1234507 /* AudioCallManager.swift in Sources */,
 				B1234567890ABCDEF1234509 /* UIComponents.swift in Sources */,
+				B1234567890ABCDEF123450B /* QRCodeManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

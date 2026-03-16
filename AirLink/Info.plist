@@ -26,6 +26,8 @@
 	<string>AirLink yakın cihazlar ile peer-to-peer bağlantı kurmak için yerel ağ erişimi gerektirir.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>AirLink sesli sohbet için mikrofon erişimi gerektirir.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>AirLink QR kod ile hızlı cihaz eşleştirmesi için kamera erişimi gerektirir.</string>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_airlink._tcp</string>

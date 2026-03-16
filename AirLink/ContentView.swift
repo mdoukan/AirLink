@@ -253,21 +253,28 @@ private extension ContentView {
             
             VStack(spacing: 0) {
                 // Header
-                HStack {
-                    Text("Mesajlar")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                    Spacer()
-                    Menu {
-                        Button(role: .destructive) {
-                            messageManager.clearMessages()
+                VStack(spacing: 8) {
+                    HStack {
+                        Text("Mesajlar")
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                        Spacer()
+                        Menu {
+                            Button(role: .destructive) {
+                                messageManager.clearMessages()
+                            } label: {
+                                Label("Mesajları Temizle", systemImage: "trash")
+                            }
                         } label: {
-                            Label("Mesajları Temizle", systemImage: "trash")
+                            Image(systemName: "ellipsis.circle.fill")
+                                .font(.title2)
+                                .foregroundStyle(.white.opacity(0.7))
                         }
-                    } label: {
-                        Image(systemName: "ellipsis.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(.white.opacity(0.7))
+                    }
+                    
+                    // Grup bilgisi
+                    if !multipeerManager.connectedPeers.isEmpty {
+                        GroupChatHeaderView(peers: multipeerManager.connectedPeers)
                     }
                 }
                 .padding(.horizontal)

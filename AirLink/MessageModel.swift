@@ -84,6 +84,7 @@ class MessageManager: ObservableObject {
     private var typingTimer: Timer?
     private let currentUserName: String
     private let currentUserID: String
+    private var previousPeerNames: Set<String> = []
     
     // MARK: - Initialization
     init(multipeerManager: MultipeerManager) {
@@ -250,13 +251,12 @@ private extension MessageManager {
     }
     
     func handlePeerChanges(_ peers: [ConnectedPeer]) {
-        // Yeni bağlanan kullanıcılar için mesaj ekle
-        let currentPeerNames = Set(messages.compactMap { message in
-            message.type == .userJoined ? message.senderName : nil
-        })
+        let currentPeerNames = Set(peers.map { $0.displayName }.filter { $0 != currentUserName })
         
-        for peer in peers {
-            if !currentPeerNames.contains(peer.displayName) && peer.displayName != currentUserName {
+        // Yeni katılan kullanıcılar
+        let joinedPeers = currentPeerNames.subtracting(previousPeerNames)
+        for name in joinedPeers {
+            if let peer = peers.first(where: { $0.displayName == name }) {
                 let joinMessage = ChatMessage(
                     content: "\(peer.displayName) sohbete katıldı",
                     senderName: peer.displayName,
@@ -267,6 +267,23 @@ private extension MessageManager {
                 messages.append(joinMessage)
             }
         }
+        
+        // Ayrılan kullanıcılar 
+        let leftPeers = previousPeerNames.subtracting(currentPeerNames)
+        for name in leftPeers {
+            let leftMessage = ChatMessage(
+                content: "\(name) sohbetten ayrıldı",
+                senderName: name,
+                senderID: name,
+                type: .userLeft,
+                isFromCurrentUser: false
+            )
+            messages.append(leftMessage)
+            // Yazıyor göstergesini temizle
+            typingUsers.removeAll { $0 == name }
+        }
+        
+        previousPeerNames = currentPeerNames
     }
     
     func updateMessageStatus(_ messageID: UUID, status: MessageStatus) {
