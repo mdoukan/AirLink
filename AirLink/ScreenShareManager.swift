@@ -34,6 +34,27 @@ enum ScreenShareStatus: Equatable {
     case error(String) // Hata
 }
 
+// MARK: - Ekran Paylaşım Bildirimi (Grup için)
+
+struct ScreenShareNotification: Codable {
+    let senderName: String
+    let senderID: String
+    let isSharing: Bool
+    let timestamp: Date
+    let type: String // "screenShareStatus"
+}
+
+/// Aktif paylaşımcı modeli
+struct ActiveSharer: Identifiable, Equatable {
+    let id: String // peerID displayName
+    let displayName: String
+    var isSharing: Bool
+    
+    static func == (lhs: ActiveSharer, rhs: ActiveSharer) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
 // MARK: - Paylaşım Modu
 
 enum ShareMode: String, CaseIterable, Identifiable {
@@ -96,12 +117,15 @@ class ScreenShareManager: NSObject, ObservableObject {
     @Published var streamQuality: Float = 0.8 // 0.0-1.0 arası kalite
     @Published var shareMode: ShareMode = .fullScreen
     @Published var selectedApp: ShareableApp?
+    @Published var activeSharers: [ActiveSharer] = [] // Grup: kim paylaşıyor
+    @Published var viewerCount: Int = 0 // Kaç kişi izliyor
     
     // MARK: - Private Properties
     private let multipeerManager: MultipeerManager
     private let screenRecorder = RPScreenRecorder.shared()
     private var videoEncoder: VideoEncoder?
     private var videoDecoder: VideoDecoder?
+    private var cancellables = Set<AnyCancellable>()
     
     // Video ayarları
     private let targetFPS: Int = 30
@@ -122,6 +146,7 @@ class ScreenShareManager: NSObject, ObservableObject {
         
         setupDataReceiver()
         setupVideoComponents()
+        observeConnections()
         
         print("🎬 ScreenShareManager başlatıldı")
     }
@@ -177,6 +202,9 @@ extension ScreenShareManager {
                 DispatchQueue.main.async {
                     self?.status = .streaming
                     self?.isSharing = true
+                    self?.notifyShareStatus(isSharing: true)
+                    // Bağlı cihaz sayısını görüntüleyici sayısı olarak ayarla
+                    self?.viewerCount = self?.multipeerManager.connectedPeers.count ?? 0
                 }
             }
         }
@@ -187,6 +215,7 @@ extension ScreenShareManager {
         guard isSharing else { return }
         
         status = .stopping
+        notifyShareStatus(isSharing: false)
         
         screenRecorder.stopCapture { [weak self] error in
             if let error = error {
@@ -199,6 +228,7 @@ extension ScreenShareManager {
                 self?.status = .idle
                 self?.isSharing = false
                 self?.sentFrameCount = 0
+                self?.viewerCount = 0
             }
         }
         
@@ -228,6 +258,30 @@ extension ScreenShareManager {
             }
         }
     }
+    
+    /// Gelen metaData'yı ekran paylaşım bildirimi olarak işle
+    func handleScreenShareNotification(_ data: Data, from peer: MCPeerID) {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        guard let notification = try? decoder.decode(ScreenShareNotification.self, from: data),
+              notification.type == "screenShareStatus" else { return }
+        
+        DispatchQueue.main.async {
+            if notification.isSharing {
+                if !self.activeSharers.contains(where: { $0.id == notification.senderID }) {
+                    self.activeSharers.append(
+                        ActiveSharer(id: notification.senderID, displayName: notification.senderName, isSharing: true)
+                    )
+                }
+            } else {
+                self.activeSharers.removeAll { $0.id == notification.senderID }
+                if self.activeSharers.isEmpty {
+                    self.isReceivingShare = false
+                    self.receivedFrameCount = 0
+                }
+            }
+        }
+    }
 }
 
 // MARK: - Private Methods
@@ -247,6 +301,37 @@ private extension ScreenShareManager {
                 self?.onFrameReceived?(pixelBuffer)
                 self?.receivedFrameCount += 1
             }
+        }
+    }
+    
+    func observeConnections() {
+        multipeerManager.$connectedPeers
+            .sink { [weak self] peers in
+                guard let self = self else { return }
+                let connectedIDs = Set(peers.map { $0.peerID.displayName })
+                DispatchQueue.main.async {
+                    self.activeSharers.removeAll { !connectedIDs.contains($0.id) }
+                    if self.isSharing {
+                        self.viewerCount = peers.count
+                    }
+                }
+            }
+            .store(in: &cancellables)
+    }
+    
+    func notifyShareStatus(isSharing: Bool) {
+        let notification = ScreenShareNotification(
+            senderName: multipeerManager.peerID.displayName,
+            senderID: multipeerManager.peerID.displayName,
+            isSharing: isSharing,
+            timestamp: Date(),
+            type: "screenShareStatus"
+        )
+        
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        if let data = try? encoder.encode(notification) {
+            multipeerManager.sendData(data, type: .metaData)
         }
     }
     

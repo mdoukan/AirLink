@@ -485,6 +485,128 @@ struct MessageInputView: View {
     }
 }
 
+// MARK: - Ekran Paylaşımı Grup View
+
+struct ScreenShareGroupView: View {
+    let connectedPeers: [ConnectedPeer]
+    let activeSharers: [ActiveSharer]
+    let isSharing: Bool
+    let viewerCount: Int
+    
+    private func colorForName(_ name: String) -> Color {
+        let colors: [Color] = [
+            .blue, .green, .orange, .purple, .pink, .mint, .cyan, .indigo, .teal, .yellow
+        ]
+        let hash = abs(name.hashValue)
+        return colors[hash % colors.count]
+    }
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: "person.2.wave.2.fill")
+                    .foregroundColor(AppTheme.accent)
+                Text("Grup Paylaşımı")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.white.opacity(0.8))
+                Spacer()
+                Text("\(connectedPeers.count) kişi")
+                    .font(.caption.weight(.medium))
+                    .foregroundColor(.white.opacity(0.5))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Color.white.opacity(0.1))
+                    .clipShape(Capsule())
+            }
+            
+            // Katılımcı listesi
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    // Kendim
+                    VStack(spacing: 6) {
+                        ZStack(alignment: .bottomTrailing) {
+                            Circle()
+                                .fill(AppTheme.accent)
+                                .frame(width: 40, height: 40)
+                                .overlay(
+                                    Image(systemName: "person.fill")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.white)
+                                )
+                            if isSharing {
+                                Circle()
+                                    .fill(.red)
+                                    .frame(width: 14, height: 14)
+                                    .overlay(
+                                        Image(systemName: "rectangle.inset.filled")
+                                            .font(.system(size: 7))
+                                            .foregroundColor(.white)
+                                    )
+                                    .overlay(Circle().stroke(Color(red: 0.1, green: 0.12, blue: 0.22), lineWidth: 2))
+                            }
+                        }
+                        Text("Ben")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.white.opacity(0.7))
+                        if isSharing {
+                            Text("Paylaşıyor")
+                                .font(.system(size: 8))
+                                .foregroundColor(.red)
+                        }
+                    }
+                    
+                    // Diğer katılımcılar
+                    ForEach(connectedPeers) { peer in
+                        let isSharingScreen = activeSharers.contains { $0.id == peer.peerID.displayName }
+                        VStack(spacing: 6) {
+                            ZStack(alignment: .bottomTrailing) {
+                                Circle()
+                                    .fill(colorForName(peer.displayName))
+                                    .frame(width: 40, height: 40)
+                                    .overlay(
+                                        Text(String(peer.displayName.prefix(1)).uppercased())
+                                            .font(.system(size: 16, weight: .bold))
+                                            .foregroundColor(.white)
+                                    )
+                                if isSharingScreen {
+                                    Circle()
+                                        .fill(.red)
+                                        .frame(width: 14, height: 14)
+                                        .overlay(
+                                            Image(systemName: "rectangle.inset.filled")
+                                                .font(.system(size: 7))
+                                                .foregroundColor(.white)
+                                        )
+                                        .overlay(Circle().stroke(Color(red: 0.1, green: 0.12, blue: 0.22), lineWidth: 2))
+                                } else {
+                                    Circle()
+                                        .fill(.green)
+                                        .frame(width: 12, height: 12)
+                                        .overlay(Circle().stroke(Color(red: 0.1, green: 0.12, blue: 0.22), lineWidth: 2))
+                                }
+                            }
+                            Text(peer.displayName.components(separatedBy: " ").first ?? peer.displayName)
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(.white.opacity(0.7))
+                                .lineLimit(1)
+                            if isSharingScreen {
+                                Text("Paylaşıyor")
+                                    .font(.system(size: 8))
+                                    .foregroundColor(.red)
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, 4)
+            }
+        }
+        .padding(14)
+        .background(AppTheme.cardBg)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppTheme.cardBorder, lineWidth: 1))
+    }
+}
+
 // MARK: - Ekran Paylaşımı Durum
 
 struct ScreenShareStatusView: View {

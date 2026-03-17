@@ -348,6 +348,57 @@ private extension ContentView {
                         .padding(.horizontal)
                         .padding(.top, 10)
                     
+                    // Grup Katılımcıları
+                    if !multipeerManager.connectedPeers.isEmpty {
+                        ScreenShareGroupView(
+                            connectedPeers: multipeerManager.connectedPeers,
+                            activeSharers: screenShareManager.activeSharers,
+                            isSharing: screenShareManager.isSharing,
+                            viewerCount: screenShareManager.viewerCount
+                        )
+                        .padding(.horizontal)
+                    }
+                    
+                    // Aktif paylaşımcılar (başkaları paylaşıyorsa)
+                    if !screenShareManager.activeSharers.isEmpty && !screenShareManager.isSharing {
+                        VStack(alignment: .leading, spacing: 10) {
+                            SectionHeader(title: "Aktif Paylaşımlar", icon: "play.rectangle.fill", color: .green)
+                            
+                            ForEach(screenShareManager.activeSharers) { sharer in
+                                HStack(spacing: 12) {
+                                    ZStack {
+                                        Circle()
+                                            .fill(Color.green)
+                                            .frame(width: 10, height: 10)
+                                        Circle()
+                                            .fill(Color.green.opacity(0.3))
+                                            .frame(width: 20, height: 20)
+                                    }
+                                    
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(sharer.displayName)
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundColor(.white)
+                                        Text("Ekran paylaşıyor")
+                                            .font(.caption)
+                                            .foregroundColor(.green.opacity(0.8))
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "rectangle.inset.filled.and.person.filled")
+                                        .font(.body)
+                                        .foregroundColor(.green)
+                                }
+                                .padding()
+                                .background(Color.green.opacity(0.1))
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.green.opacity(0.25), lineWidth: 1))
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                    
                     // Durum
                     ScreenShareStatusView(screenShareManager: screenShareManager)
                         .padding(.horizontal)
@@ -571,6 +622,24 @@ private extension ContentView {
                                     .foregroundColor(.white)
                                     .clipShape(RoundedRectangle(cornerRadius: 14))
                                 }
+                            }
+                            
+                            // İzleyici sayısı
+                            if screenShareManager.viewerCount > 0 {
+                                HStack(spacing: 10) {
+                                    Image(systemName: "eye.fill")
+                                        .foregroundColor(AppTheme.accent)
+                                    Text("\(screenShareManager.viewerCount) kişi izliyor")
+                                        .font(.subheadline.weight(.medium))
+                                        .foregroundColor(.white)
+                                    Spacer()
+                                    Image(systemName: "person.2.fill")
+                                        .foregroundColor(AppTheme.accent.opacity(0.6))
+                                }
+                                .padding()
+                                .background(AppTheme.accent.opacity(0.1))
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                                .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppTheme.accent.opacity(0.2), lineWidth: 1))
                             }
                             
                             // Durdur
@@ -838,6 +907,13 @@ private extension ContentView {
         // Çağrı bitiş callback'i
         audioCallManager.onCallEnded = {
             // UI güncellemeleri
+        }
+        
+        // MetaData callback'ini hem mesaj hem ekran paylaşımı için zincirleme
+        let originalMetaHandler = multipeerManager.onMetaDataReceived
+        multipeerManager.onMetaDataReceived = { [weak screenShareManager] data, peerID in
+            originalMetaHandler?(data, peerID)
+            screenShareManager?.handleScreenShareNotification(data, from: peerID)
         }
     }
     
